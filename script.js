@@ -5,36 +5,36 @@ const splash = document.getElementById('splash-screen'), instr = document.getEle
       gameZone = document.getElementById('game-zone'), gameBoard = document.getElementById('game-board'),
       feedbackArea = document.getElementById('quiz-feedback-area'), ptsVal = document.getElementById('points-val');
 
-// PERSISTENCE (Specific to Disasters)
-let lifetimeScore = parseInt(localStorage.getItem('disastersScore')) || 0;
-let completedLessons = JSON.parse(localStorage.getItem('completedDisasterLessons')) || [];
+// PERSISTENCE (Specific to Survivals)
+let lifetimeScore = parseInt(localStorage.getItem('survivalScore')) || 0;
+let completedLessons = JSON.parse(localStorage.getItem('completedSurvivalLessons')) || [];
 if(ptsVal) ptsVal.innerText = lifetimeScore;
 
 let wordBucket = []; let currentQ = 0; let attempts = 0; let totalScore = 0; let firstCard = null;
 
 // STATIONS 
 const stations = [
-    {file:"01_AberfanDisaster.mp3", title:"Aberfan Disaster"},
-    {file:"02_AndesFlightDisaster.mp3", title:"Andes Flight Disaster"},
-    {file:"03_BanqiaoDamFailure.mp3", title:"Banqiao Dam Failure"},
-    {file:"04_BhopalGasTragedy.mp3", title:"Bhopal Gas Tragedy"},
-    {file:"05_ChernobylDisaster.mp3", title:"Chernobyl Disaster"},
-    {file:"06_CostaConcordiaSinking.mp3", title:"Costa Concordia Sinking"},
-    {file:"07_DeepwaterHorizonExplosion.mp3", title:"Deepwater Horizon Explosion"},
-    {file:"08_DonaPazFerryCollision.mp3", title:"Doña Paz Ferry Collision"},
-    {file:"09_HalifaxExplosion.mp3", title:"Halifax Explosion"},
-    {file:"10_HindenburgDisaster.mp3", title:"Hindenburg Disaster"},
-    {file:"11_HyattRegencyCollapse.mp3", title:"Hyatt Regency Walkway Collapse"},
-    {file:"12_JALFlight123.mp3", title:"JAL Flight 123 Crash"},
-    {file:"13_JohnstownFlood.mp3", title:"Johnstown Flood"},
-    {file:"14_MVLeJoolaSinking.mp3", title:"MV Le Joola Sinking"},
-    {file:"15_MountErebusDisaster.mp3", title:"Mount Erebus Disaster"},
-    {file:"16_PiperAlphaExplosion.mp3", title:"Piper Alpha Explosion"},
-    {file:"17_RanaPlazaCollapse.mp3", title:"Rana Plaza Collapse"},
-    {file:"18_StFrancisDamFailure.mp3", title:"St. Francis Dam Failure"},
-    {file:"19_TenerifeAirportCollision.mp3", title:"Tenerife Airport Collision"},
-    {file:"20_TitanicSinking.mp3", title:"Titanic Sinking"},
-    {file:"21_UfaTrainDisaster.mp3", title:"Ufa Train Disaster"}
+    {file:"01_TheAshCloud.mp3", title:"The Ash Cloud"},
+    {file:"02_TheBigWave.mp3", title:"The Big Wave"},
+    {file:"03_TheDeepDark.mp3", title:"The Deep Dark"},
+    {file:"04_TheDrift.mp3", title:"The Drift"},
+    {file:"05_TheFallenCity.mp3", title:"The Fallen City"},
+    {file:"06_TheFrozenIsland.mp3", title:"The Frozen Island"},
+    {file:"07_TheGreatBear.mp3", title:"The Great Bear"},
+    {file:"08_TheHighWater.mp3", title:"The High Water"},
+    {file:"09_TheIcePocket.mp3", title:"The Ice Pocket"},
+    {file:"10_TheLastOneLeft.mp3", title:"The Last One Left"},
+    {file:"11_TheLonelyIsland.mp3", title:"The Lonely Island"},
+    {file:"12_TheRedDirt.mp3", title:"The Red Dirt"},
+    {file:"13_TheRisingWater.mp3", title:"The Rising Water"},
+    {file:"14_TheRiverPath.mp3", title:"The River Path"},
+    {file:"15_TheSafariGuide.mp3", title:"The Safari Guide"},
+    {file:"16_TheSandstormRunner.mp3", title:"The Sandstorm Runner"},
+    {file:"17_TheSnowTrap.mp3", title:"The Snow Trap"},
+    {file:"18_TheStoneGrip.mp3", title:"The Stone Grip"},
+    {file:"19_TheVoid.mp3", title:"The Void"},
+    {file:"20_TheWallOfFire.mp3", title:"The Wall Of Fire"},
+    {file:"21_TheWhiteSilence.mp3", title:"The White Silence"}
 ];
 
 stations.forEach((s, i) => {
@@ -53,17 +53,81 @@ document.getElementById('btn-start').onclick = () => { splash.classList.add('hid
 document.getElementById('btn-enter').onclick = () => { instr.classList.add('hidden'); app.classList.remove('hidden'); };
 document.getElementById('btn-back').onclick = () => { location.reload(); };
 
+document.getElementById('ctrl-play').onclick = () => audio.play();
+document.getElementById('ctrl-pause').onclick = () => audio.pause();
+document.getElementById('ctrl-stop').onclick = () => { audio.pause(); audio.currentTime = 0; };
+document.getElementById('btn-blind').onclick = () => { transcript.classList.add('hidden'); gameZone.classList.add('hidden'); audio.play(); };
+
+// --- ALARM SYSTEM BUTTONS ---
+document.getElementById('btn-read').onclick = () => {
+    if (typeof lessonData === 'undefined') { alert("🚨 FATAL ERROR: Your data.js file did not load!"); return; }
+    let fn = decodeURIComponent(audio.src.split('/').pop()); 
+    if(!lessonData[fn]) { alert("🚨 ERROR: Could not find text data for " + fn); return; }
+    
+    const data = lessonData[fn][0];
+    transcript.classList.remove('hidden'); gameZone.classList.add('hidden'); transcript.innerHTML = "";
+    data.text.split(" ").forEach(w => {
+        const span = document.createElement('span'); 
+        const clean = w.toLowerCase().replace(/[^a-z0-9ğüşöçı]/gi, "");
+        span.innerText = w + " "; span.className = "clickable-word";
+        span.onclick = (e) => {
+            const tr = data.dict[clean];
+            if(tr) {
+                if (!wordBucket.some(p => p.en === clean)) wordBucket.push({en: clean, tr: tr});
+                popup.innerText = tr; popup.style.left = `${e.clientX}px`; popup.style.top = `${e.clientY - 50}px`;
+                popup.classList.remove('hidden'); setTimeout(() => popup.classList.add('hidden'), 2000);
+            }
+        };
+        transcript.appendChild(span);
+    });
+    audio.play();
+};
+
+document.getElementById('btn-game').onclick = () => {
+    if (typeof lessonData === 'undefined') { alert("🚨 ERROR: data.js is missing or broken!"); return; }
+    let fn = decodeURIComponent(audio.src.split('/').pop()); 
+    if(!lessonData[fn]) { alert("🚨 ERROR: Could not find match data for " + fn); return; }
+
+    const lesson = lessonData[fn][0];
+    transcript.classList.add('hidden'); gameZone.classList.remove('hidden'); feedbackArea.innerHTML = "";
+    gameBoard.innerHTML = ""; firstCard = null; gameBoard.style.display = "grid";
+    let set = [...wordBucket];
+    for (let k in lesson.dict) { if (set.length >= 8) break; if (!set.some(p => p.en === k)) set.push({en: k, tr: lesson.dict[k]}); }
+    let deck = [];
+    set.forEach(p => { deck.push({text: p.en, match: p.tr}); deck.push({text: p.tr, match: p.en}); });
+    deck.sort(() => Math.random() - 0.5);
+    deck.forEach(card => {
+        const div = document.createElement('div'); div.className = 'game-card'; div.innerText = card.text;
+        div.onclick = () => {
+            if (div.classList.contains('correct') || div.classList.contains('selected')) return;
+            if (firstCard) {
+                if (firstCard.innerText === card.match) {
+                    div.classList.add('correct'); firstCard.classList.add('correct'); firstCard = null;
+                } else {
+                    div.classList.add('wrong'); setTimeout(() => { div.classList.remove('wrong'); firstCard.classList.remove('selected'); firstCard = null; }, 500);
+                }
+            } else { firstCard = div; div.classList.add('selected'); }
+        };
+        gameBoard.appendChild(div);
+    });
+};
+
 document.getElementById('btn-bowling').onclick = () => {
-    const fn = audio.src.split('/').pop(); const lesson = lessonData[fn][0];
+    if (typeof lessonData === 'undefined') { alert("🚨 ERROR: data.js is missing or broken!"); return; }
+    let fn = decodeURIComponent(audio.src.split('/').pop()); 
+    if(!lessonData[fn]) { alert("🚨 ERROR: Could not find quiz data for " + fn); return; }
+    
+    const lesson = lessonData[fn][0];
     transcript.classList.add('hidden'); gameZone.classList.remove('hidden'); gameBoard.style.display = "none";
     currentQ = 0; totalScore = 0; attempts = 0;
     runQuiz(lesson);
 };
 
+// --- QUIZ LOGIC ---
 function runQuiz(lesson) {
     if (currentQ >= 7) { finishQuiz(); return; }
     const qData = lesson.questions[currentQ];
-    const storyNum = parseInt(audio.src.split('/').pop().substring(0,2));
+    const storyNum = parseInt(decodeURIComponent(audio.src.split('/').pop()).substring(0,2));
     
     feedbackArea.innerHTML = `
         <div id="quiz-container">
@@ -92,15 +156,11 @@ function runQuiz(lesson) {
 
     document.getElementById('btn-speak').onclick = function() {
         const btn = this; const status = document.getElementById('mic-status');
-        
         if (window.currentRec) { window.currentRec.abort(); }
-        
         window.currentRec = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
         window.currentRec.lang = 'en-US';
         window.currentRec.interimResults = false;
-
         window.currentRec.onstart = () => { btn.classList.add('active'); status.innerText = "Listening..."; };
-
         window.currentRec.onresult = (e) => {
             document.getElementById('mic-box').classList.add('hidden'); 
             const res = e.results[0][0].transcript.toLowerCase().trim().replace(/[^a-z0-9]/g, "");
@@ -114,7 +174,6 @@ function runQuiz(lesson) {
                 else { showResult(false, "MISS! (0 pts)", qData, lesson, false); }
             }
         };
-
         window.currentRec.onerror = () => { btn.classList.remove('active'); status.innerText = "Error. Try again."; };
         window.currentRec.start();
     };
@@ -141,60 +200,10 @@ function showResult(isCorrect, msg, qData, lesson, canRetry = false) {
 }
 
 function finishQuiz() {
-    lifetimeScore += totalScore; localStorage.setItem('disastersScore', lifetimeScore);
-    const fn = audio.src.split('/').pop();
+    lifetimeScore += totalScore; localStorage.setItem('survivalScore', lifetimeScore);
+    const fn = decodeURIComponent(audio.src.split('/').pop());
     if(!completedLessons.includes(fn)) {
-        completedLessons.push(fn); localStorage.setItem('completedDisasterLessons', JSON.stringify(completedLessons));
+        completedLessons.push(fn); localStorage.setItem('completedSurvivalLessons', JSON.stringify(completedLessons));
     }
     feedbackArea.innerHTML = `<h1 style="color:#ccff00; font-size: 60px;">FINISHED!</h1><h2 style="font-size: 40px;">QUIZ SCORE: ${totalScore}</h2><button onclick="location.reload()" class="action-btn-large">SAVE & RETURN</button>`;
 }
-
-document.getElementById('ctrl-play').onclick = () => audio.play();
-document.getElementById('ctrl-pause').onclick = () => audio.pause();
-document.getElementById('ctrl-stop').onclick = () => { audio.pause(); audio.currentTime = 0; };
-document.getElementById('btn-blind').onclick = () => { transcript.classList.add('hidden'); gameZone.classList.add('hidden'); audio.play(); };
-
-document.getElementById('btn-read').onclick = () => {
-    const fn = audio.src.split('/').pop(); const data = lessonData[fn][0];
-    transcript.classList.remove('hidden'); gameZone.classList.add('hidden'); transcript.innerHTML = "";
-    data.text.split(" ").forEach(w => {
-        const span = document.createElement('span'); 
-        const clean = w.toLowerCase().replace(/[^a-z0-9ğüşöçı]/gi, "");
-        span.innerText = w + " "; span.className = "clickable-word";
-        span.onclick = (e) => {
-            const tr = data.dict[clean];
-            if(tr) {
-                if (!wordBucket.some(p => p.en === clean)) wordBucket.push({en: clean, tr: tr});
-                popup.innerText = tr; popup.style.left = `${e.clientX}px`; popup.style.top = `${e.clientY - 50}px`;
-                popup.classList.remove('hidden'); setTimeout(() => popup.classList.add('hidden'), 2000);
-            }
-        };
-        transcript.appendChild(span);
-    });
-    audio.play();
-};
-
-document.getElementById('btn-game').onclick = () => {
-    const fn = audio.src.split('/').pop(); const lesson = lessonData[fn][0];
-    transcript.classList.add('hidden'); gameZone.classList.remove('hidden'); feedbackArea.innerHTML = "";
-    gameBoard.innerHTML = ""; firstCard = null; gameBoard.style.display = "grid";
-    let set = [...wordBucket];
-    for (let k in lesson.dict) { if (set.length >= 8) break; if (!set.some(p => p.en === k)) set.push({en: k, tr: lesson.dict[k]}); }
-    let deck = [];
-    set.forEach(p => { deck.push({text: p.en, match: p.tr}); deck.push({text: p.tr, match: p.en}); });
-    deck.sort(() => Math.random() - 0.5);
-    deck.forEach(card => {
-        const div = document.createElement('div'); div.className = 'game-card'; div.innerText = card.text;
-        div.onclick = () => {
-            if (div.classList.contains('correct') || div.classList.contains('selected')) return;
-            if (firstCard) {
-                if (firstCard.innerText === card.match) {
-                    div.classList.add('correct'); firstCard.classList.add('correct'); firstCard = null;
-                } else {
-                    div.classList.add('wrong'); setTimeout(() => { div.classList.remove('wrong'); firstCard.classList.remove('selected'); firstCard = null; }, 500);
-                }
-            } else { firstCard = div; div.classList.add('selected'); }
-        };
-        gameBoard.appendChild(div);
-    });
-};
